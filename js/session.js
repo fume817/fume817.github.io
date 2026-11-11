@@ -3,7 +3,25 @@
  * Peer.jsを利用したP2P通信の確立・管理およびメッセージ送受信
  */
 
-import { Peer } from "https://esm.sh/peerjs@1.5.4";
+// Peerクラスの安全な取得 (window.Peer または 動的import)
+async function getPeerClass() {
+  if (typeof window !== "undefined" && window.Peer) {
+    return window.Peer;
+  }
+  try {
+    const mod = await import("https://esm.sh/peerjs@1.5.4");
+    return mod.Peer;
+  } catch (err) {
+    console.warn("[session.js] esm.shからのPeerJS読み込みに失敗しました。unpkgを試みます:", err);
+    try {
+      const mod2 = await import("https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js");
+      return window.Peer || mod2.Peer;
+    } catch (e) {
+      console.error("[session.js] PeerJSのロードに失敗しました:", e);
+      throw new Error("PeerJSライブラリをロードできませんでした。インターネット接続を確認してください。");
+    }
+  }
+}
 
 // 現在アクティブなPeerインスタンス
 let currentPeer = null;
@@ -21,7 +39,14 @@ let onConnectedCallback = null;
  * @param {string} peerId
  * @returns {Promise<{ ok: boolean, message?: string }>}
  */
-export function checkPeerIdConflict(peerId) {
+export async function checkPeerIdConflict(peerId) {
+  let Peer;
+  try {
+    Peer = await getPeerClass();
+  } catch (err) {
+    return { ok: false, message: err.message };
+  }
+
   return new Promise((resolve) => {
     let resolved = false;
 
@@ -83,7 +108,9 @@ export function checkPeerIdConflict(peerId) {
  * @param {function} callbacks.onConnected
  * @returns {Promise<Peer>}
  */
-export function initChatSession(myPeerId, { onMessage, onStatusChange, onConnected } = {}) {
+export async function initChatSession(myPeerId, { onMessage, onStatusChange, onConnected } = {}) {
+  const Peer = await getPeerClass();
+
   return new Promise((resolve, reject) => {
     onMessageReceivedCallback = onMessage;
     onStatusChangeCallback = onStatusChange;

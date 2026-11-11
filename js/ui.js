@@ -321,3 +321,72 @@ export function setFirstChatVisible(visible) {
   firstChat.style.display = visible ? "block" : "none";
 }
 
+/**
+ * チャット上部ヘッダーの相手情報を更新
+ * @param {string} name
+ * @param {string} peerId
+ */
+export function updateChatHeader(name, peerId) {
+  const titleEl = document.getElementById("chatWithTitle");
+  const idEl = document.getElementById("chatWithId");
+  if (titleEl) titleEl.textContent = name || "相手";
+  if (idEl) idEl.textContent = peerId ? `ID: ${peerId}` : "未接続";
+}
+
+/**
+ * サイドバーの相手一覧リストを描画
+ * @param {Array<{name: string, peerId: string}>} companions
+ * @param {function} onSelectCompanion
+ * @param {string} [activePeerId]
+ */
+export function renderCompanionList(companions, onSelectCompanion, activePeerId) {
+  const container = document.getElementById("companionList");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!companions || companions.length === 0) {
+    const emptyNotice = document.createElement("p");
+    emptyNotice.className = "message";
+    emptyNotice.style.fontSize = "0.78rem";
+    emptyNotice.textContent = "対話履歴のある相手はいません";
+    container.appendChild(emptyNotice);
+    return;
+  }
+
+  companions.forEach((comp) => {
+    const item = document.createElement("div");
+    item.className = `companion-item ${comp.peerId === activePeerId ? "active" : ""}`;
+
+    const avatar = document.createElement("div");
+    avatar.className = "companion-avatar";
+    avatar.textContent = comp.name ? comp.name.trim().charAt(0).toUpperCase() : "?";
+
+    const textDiv = document.createElement("div");
+    textDiv.className = "companion-text";
+
+    const nameRow = document.createElement("div");
+    nameRow.className = "companion-name-row";
+    nameRow.textContent = comp.name || "ユーザー";
+
+    const idRow = document.createElement("div");
+    idRow.className = "companion-id-row";
+    idRow.textContent = comp.peerId;
+
+    textDiv.appendChild(nameRow);
+    textDiv.appendChild(idRow);
+
+    item.appendChild(avatar);
+    item.appendChild(textDiv);
+
+    item.addEventListener("click", () => {
+      if (onSelectCompanion) {
+        onSelectCompanion(comp);
+      }
+    });
+
+    container.appendChild(item);
+  });
+}
+
+

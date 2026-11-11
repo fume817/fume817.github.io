@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - P2P Chat</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- PeerJS CDN（グローバルロードで高速・確実に初期化） -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <!-- ES Modulesでidbとpeerjsを解決するためのImport Map -->
     <script type="importmap">
     {
@@ -29,24 +31,40 @@
         <div id="userArea">
             <p>ユーザー名：<span id="usernameDisplay"></span></p>
             <p>ステータス：<span id="statusDisplay"></span></p>
-            <p>+</p>
+            <div class="user-area-header">
+                <span class="sub-title">チャット相手一覧</span>
+                <button type="button" id="addNewCompanionBtn" title="新規チャット">+</button>
+            </div>
+            <!-- 過去に対話した相手の一覧リスト -->
+            <div id="companionList" class="companion-list"></div>
         </div>
 
         <div id="chatArea">
+            <!-- チャット相手情報バー -->
+            <div id="chatHeader" class="chat-header">
+                <div class="companion-info">
+                    <span id="chatWithTitle" class="companion-name">チャット待機中</span>
+                    <span id="chatWithId" class="companion-id-tag">未接続</span>
+                </div>
+            </div>
+
             <div id="firstChat">
-                <button>新規チャットの作成</button>
+                <button id="showConnectFormBtn">新規チャットの作成</button>
+                <div id="connectFormArea">
                     <p>接続を待機中</p>
                     <p>or</p>
                     <input type="text" placeholder="相手のPeerIDを入力してください" id="peerIdInput">
                     <button id="connectButton">接続</button>
+                </div>
             </div>
 
             <div id="Chat"></div>
 
             <div id="UI">
-                <button id="file">+</button>
+                <input type="file" id="fileInput" style="display: none;">
+                <button type="button" id="file" title="画像を送信">+</button>
                 <input type="text" id="messageInput" placeholder="メッセージを入力してください">
-                <button id="sendButton">送信</button>
+                <button type="button" id="sendButton">送信</button>
             </div>
         </div>
     </div>

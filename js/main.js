@@ -13,30 +13,54 @@ const regData = {
   peerId: "",
 };
 
-document.addEventListener("DOMContentLoaded", async () => {
-  // 1. MyDBに自身のPeerIDが登録されているかを確認
+/**
+ * 初期化処理 (MyDBの登録チェックと画面初期表示)
+ */
+async function initializeApp() {
+  console.log("[main.js] 初期化処理を開始");
+
+  // 安全タイマー: 万が一IndexedDBの応答が遅延しても2秒後には確実に画面を表示
+  const fallbackTimer = setTimeout(() => {
+    const loading = document.getElementById("loadingView");
+    if (loading && loading.style.display !== "none") {
+      console.warn("[main.js] 初期化がタイムアウトしたため、新規登録画面を強制表示します");
+      UI.showInitialView("first");
+    }
+  }, 1500);
+
   try {
+    // 1. MyDBに自身のPeerIDが登録されているかを確認
     const myInfo = await getMyInfo();
+    clearTimeout(fallbackTimer);
 
     if (myInfo && myInfo.peerId) {
       // --- 既に登録されている場合 ---
-      // 登録済み情報をUIに反映して「ようこそ」画面を表示
+      console.log("[main.js] 登録済みアカウントを発見:", myInfo);
       UI.setRegisteredUserInfo(myInfo);
       UI.showInitialView("second");
     } else {
       // --- 未登録の場合 ---
-      // 新規登録フローを表示
+      console.log("[main.js] 未登録のため、新規登録画面を表示します");
       UI.showInitialView("first");
     }
   } catch (error) {
-    console.error("MyDBの確認中にエラーが発生しました:", error);
-    // エラー時も安全に新規登録フローへ案内
+    clearTimeout(fallbackTimer);
+    console.error("[main.js] MyDBの確認中にエラーが発生しました:", error);
     UI.showInitialView("first");
   }
 
-  // 2. イベントリスナーのセットアップ
+  // 2. 各種ボタン・入力のイベントリスナーを設定
   setupEventListeners();
-});
+}
+
+// モジュール読み込み完了時の実行
+// (DOMContentLoadedがすでに発火済みの場合でも確実に実行されるように判定)
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeApp);
+} else {
+  // すでにDOMが構築されている場合は即座に実行
+  initializeApp();
+}
 
 /**
  * 画面内の各種ボタン・入力のイベントリスナーを設定
@@ -116,7 +140,6 @@ function setupEventListeners() {
       return;
     }
 
-    // 英数字と一部記号(-, _)のみ許容する簡易チェック
     const peerIdRegex = /^[a-zA-Z0-9_-]{3,32}$/;
     if (!peerIdRegex.test(peerId)) {
       UI.showError("IDは3〜32文字の半角英数字・ハイフン・アンダースコアで入力してください", peerIdInput);
@@ -130,7 +153,6 @@ function setupEventListeners() {
       UI.resetButton(registerIdBtn);
 
       if (!result.ok) {
-        // ★ サーバー上で既に使用されている場合、またはエラーの場合
         UI.showError(result.message || "ほかのIDを試してください", peerIdInput);
         return;
       }
@@ -138,7 +160,6 @@ function setupEventListeners() {
       // 競合なし！利用可能なIDが確定
       regData.peerId = peerId;
       UI.clearError();
-      // 確認画面の表示を更新
       UI.updateConfirmInfo(regData.name, regData.peerId);
       UI.transitionStep(2, 3);
     } catch (err) {
@@ -174,10 +195,7 @@ function setupEventListeners() {
 
       try {
         UI.setButtonLoading(startChatBtn, "登録中...");
-        // MyDBに名前とPeerIDを永続化
         await saveMyInfo(regData.name, regData.peerId);
-
-        // スムーズな遷移アニメーション
         UI.animateAndNavigate("chat.html");
       } catch (error) {
         console.error("登録処理に失敗しました:", error);

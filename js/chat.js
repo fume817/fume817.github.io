@@ -1,7 +1,7 @@
 /**
  * chat.js
  * チャット画面のメイン制御スクリプト
- * DB認証チェック、P2P通信連動、メッセージ送受信、会話履歴の保存と描画
+ * DB認証チェック、P2P通信連動、メッセージ送受信、画像送信、相手名簿管理
  */
 
 import { getMyInfo, isRegistered, addChat, getChats, addCompanion, addTime, getCompanions } from "./db.js";
@@ -12,7 +12,7 @@ import * as UI from "./UI.js";
 let currentCompanionId = null;
 let myProfile = null;
 
-document.addEventListener("DOMContentLoaded", async () => {
+async function initializeChat() {
   try {
     // 1. MyDBに自身のPeerIDが登録されているか確認
     const registered = await isRegistered();
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       usernameDisplay.textContent = myProfile.name || "ユーザー";
     }
     if (profileName && myProfile) {
-      profileName.textContent = `${myProfile.name} (ID: ${myProfile.peerId})`;
+      profileName.textContent = `${myProfile.name}`;
     }
 
     // 3. Peer.jsで自身のP2P待機セッションを開始
@@ -44,13 +44,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 4. イベントリスナーの設定
     setupChatEventListeners();
 
-    // 5. 過去のチャット相手リスト（コンパニオン）があれば読み込み
-    await loadCompanionsList();
+    // 5. 過去のチャット相手リスト（コンパニオン）を読み込んでサイドバーに表示
+    await refreshCompanionsList();
   } catch (error) {
     console.error("チャット画面初期化中にエラーが発生しました:", error);
     UI.updateChatStatus("初期化エラー", "error");
   }
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeChat);
+} else {
+  initializeChat();
+}
 
 /**
  * 相手からの接続確立時のハンドラ
@@ -64,6 +70,9 @@ async function handlePeerConnected(peerId) {
   await addCompanion(peerId, peerId);
   await addTime(peerId);
 
+  // チャットヘッダー更新
+  UI.updateChatHeader(peerId, peerId);
+
   // 接続待機パネルを隠してチャット画面を表示
   UI.setFirstChatVisible(false);
 
@@ -71,6 +80,9 @@ async function handlePeerConnected(peerId) {
   const history = await getChats(peerId);
   UI.renderChatHistory(history);
   UI.updateChatStatus(`接続中: ${peerId}`, "connected");
+
+  // サイドバーの相手一覧を更新
+  await refreshCompanionsList();
 }
 
 /**
@@ -79,7 +91,7 @@ async function handlePeerConnected(peerId) {
  * @param {string} senderPeerId
  */
 async function handleIncomingMessage(data, senderPeerId) {
-  const content = typeof data === "object" ? data.text || JSON.stringify(data) : String(data);
+  const content = typeof data === "object" ? data.content || data.text || JSON.stringify(data) : String(data);
   const type = (typeof data === "object" && data.type) || "text";
 
   const chatRecord = {
@@ -98,6 +110,7 @@ async function handleIncomingMessage(data, senderPeerId) {
     UI.appendChatBubble(chatRecord);
   } else {
     console.log(`別ユーザー(${senderPeerId})からの新着メッセージを受信`);
+    await refreshCompanionsList();
   }
 }
 
@@ -118,7 +131,10 @@ function setupChatEventListeners() {
   const sendButton = document.getElementById("sendButton");
   const connectButton = document.getElementById("connectButton");
   const peerIdInput = document.getElementById("peerIdInput");
-  const newChatBtn = document.querySelector("#firstChat button");
+  const showConnectFormBtn = document.getElementById("showConnectFormBtn");
+  const addNewCompanionBtn = document.getElementById("addNewCompanionBtn");
+  const fileButton = document.getElementById("file");
+  const fileInput = document.getElementById("fileInput");
 
   // --- メッセージ送信 ---
   if (sendButton) {
@@ -127,12 +143,20 @@ function setupChatEventListeners() {
 
   if (messageInput) {
     messageInput.addEventListener("keydown", (e) => {
-      // Enterキーで送信 (Shift+Enterは改行)
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
       }
     });
+  }
+
+  // --- 画像・ファイル送信 ---
+  if (fileButton && fileInput) {
+    fileButton.addEventListener("click", () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", handleFileSelect);
   }
 
   // --- 相手への接続 ---
@@ -168,16 +192,17 @@ function setupChatEventListeners() {
   }
 
   // --- 新規チャット作成ボタン ---
-  if (newChatBtn) {
-    newChatBtn.addEventListener("click", () => {
-      UI.setFirstChatVisible(true);
-      if (peerIdInput) peerIdInput.focus();
-    });
-  }
+  const openNewChat = () => {
+    UI.setFirstChatVisible(true);
+    if (peerIdInput) peerIdInput.focus();
+  };
+
+  if (showConnectFormBtn) showConnectFormBtn.addEventListener("click", openNewChat);
+  if (addNewCompanionBtn) addNewCompanionBtn.addEventListener("click", openNewChat);
 }
 
 /**
- * メッセージ送信処理
+ * テキストメッセージ送信処理
  */
 async function sendMessage() {
   const messageInput = document.getElementById("messageInput");
@@ -193,7 +218,7 @@ async function sendMessage() {
   }
 
   const messagePayload = {
-    text: text,
+    content: text,
     type: "text",
     senderName: myProfile ? myProfile.name : "自分",
     timestamp: Date.now(),
@@ -202,7 +227,7 @@ async function sendMessage() {
   // 1. P2Pで相手に送信
   const sent = sendP2PMessage(messagePayload);
   if (!sent) {
-    alert("相手との接続が切断されているため送信できませんでした");
+    alert("相手との接続が開かれていないため送信できませんでした");
     return;
   }
 
@@ -226,9 +251,89 @@ async function sendMessage() {
 }
 
 /**
- * 過去に会話した相手一覧（コンパニオン）の読み込み
+ * ファイル/画像選択時の送信処理
  */
-async function loadCompanionsList() {
+async function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!currentCompanionId) {
+    alert("まずはチャット相手に接続してください");
+    event.target.value = "";
+    return;
+  }
+
+  // ファイルサイズチェック (P2P DataChannelの許容量を考慮し、2MB程度を推奨)
+  if (file.size > 2 * 1024 * 1024) {
+    alert("送信できるファイルサイズは2MBまでです");
+    event.target.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const dataUrl = reader.result;
+    const isImage = file.type.startsWith("image/");
+    const messageType = isImage ? "image" : "file";
+
+    const payload = {
+      type: messageType,
+      content: dataUrl,
+      fileName: file.name,
+      senderName: myProfile ? myProfile.name : "自分",
+      timestamp: Date.now(),
+    };
+
+    // P2P送信
+    const sent = sendP2PMessage(payload);
+    if (!sent) {
+      alert("相手との接続が開かれていないためファイルを送信できませんでした");
+      return;
+    }
+
+    // 自身のIndexedDBに保存
+    const chatRecord = {
+      me: 1,
+      type: messageType,
+      content: dataUrl,
+      createdAt: Date.now(),
+    };
+    await addChat(currentCompanionId, chatRecord);
+    await addTime(currentCompanionId);
+
+    // 画面に表示
+    UI.appendChatBubble(chatRecord);
+    event.target.value = ""; // 入力リセット
+  };
+
+  reader.readAsDataURL(file);
+}
+
+/**
+ * サイドバーの相手一覧を再読み込みして描画
+ */
+async function refreshCompanionsList() {
   const companions = await getCompanions();
-  console.log("過去の対話相手リスト:", companions);
+  UI.renderCompanionList(companions, async (selectedCompanion) => {
+    // 相手をクリックしたときの処理
+    currentCompanionId = selectedCompanion.peerId;
+    UI.updateChatHeader(selectedCompanion.name, selectedCompanion.peerId);
+    UI.setFirstChatVisible(false);
+
+    // 履歴読み出し
+    const history = await getChats(selectedCompanion.peerId);
+    UI.renderChatHistory(history);
+
+    // まだP2P接続していなければ接続を試みる
+    if (getActivePeerId() !== selectedCompanion.peerId) {
+      try {
+        UI.updateChatStatus(`接続中: ${selectedCompanion.peerId}...`, "connecting");
+        await connectToPeer(selectedCompanion.peerId);
+      } catch (err) {
+        console.warn("相手への再接続待機中 (相手がオフラインの可能性があります)");
+      }
+    }
+    // アクティブ状態の反映
+    await refreshCompanionsList();
+  }, currentCompanionId);
 }
