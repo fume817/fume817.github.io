@@ -5,7 +5,7 @@
 
 import { getMyInfo, saveMyInfo } from "./db.js";
 import { checkPeerIdConflict } from "./session.js";
-import * as UI from "./UI.js";
+import * as UI from "./ui.js";
 
 // 新規登録フロー用の一時データ
 const regData = {

@@ -1,5 +1,5 @@
 /**
- * UI.js
+ * ui.js / UI.js
  * 画面の動き、トランジション、アニメーション効果を管理するモジュール
  */
 
@@ -40,7 +40,6 @@ export function showInitialView(viewType) {
     if (elements.firstView) {
       elements.firstView.style.display = "block";
       elements.firstView.classList.add("slide-in-right");
-      // ステップ1を表示
       setStep(1);
     }
   }
@@ -79,8 +78,8 @@ export function updateConfirmInfo(username, peerId) {
 
 /**
  * ステップ番号に応じたパネル切り替え（アニメーション付き）
- * @param {number} fromStep 1, 2, 3
- * @param {number} toStep 1, 2, 3
+ * @param {number} fromStep
+ * @param {number} toStep
  */
 export function transitionStep(fromStep, toStep) {
   const currentPanel = document.getElementById(`step-${fromStep}`);
@@ -89,11 +88,9 @@ export function transitionStep(fromStep, toStep) {
 
   if (!currentPanel || !nextPanel) return;
 
-  // アニメーションクラスのリセット
   currentPanel.classList.remove("slide-in-right", "slide-in-left", "active");
   nextPanel.classList.remove("slide-out-left", "slide-out-right");
 
-  // 送出アニメーション
   const exitClass = isForward ? "slide-out-left" : "slide-out-right";
   currentPanel.classList.add(exitClass);
 
@@ -101,22 +98,19 @@ export function transitionStep(fromStep, toStep) {
     currentPanel.classList.remove(exitClass);
     currentPanel.style.display = "none";
 
-    // 侵入アニメーション
     const enterClass = isForward ? "slide-in-right" : "slide-in-left";
     nextPanel.style.display = "block";
     nextPanel.classList.add("active", enterClass);
 
-    // インジケータードットの更新
     updateStepDots(toStep);
 
-    // 次のステップの入力欄に自動フォーカス
     if (toStep === 1 && elements.usernameInput) elements.usernameInput.focus();
     if (toStep === 2 && elements.peerIdInput) elements.peerIdInput.focus();
   }, 250);
 }
 
 /**
- * 直接特定のステップを表示（アニメーションなし）
+ * 直接特定のステップを表示
  * @param {number} stepNumber
  */
 export function setStep(stepNumber) {
@@ -134,10 +128,6 @@ export function setStep(stepNumber) {
   updateStepDots(stepNumber);
 }
 
-/**
- * プログレスドットの状態を更新
- * @param {number} activeStep
- */
 function updateStepDots(activeStep) {
   const dots = document.querySelectorAll(".step-dot");
   dots.forEach((dot, index) => {
@@ -152,7 +142,7 @@ function updateStepDots(activeStep) {
 }
 
 /**
- * エラー演出（インプットの揺れとメッセージ表示）
+ * エラー演出
  * @param {string} message
  * @param {HTMLElement} [targetInput]
  */
@@ -166,7 +156,6 @@ export function showError(message, targetInput) {
     targetInput.classList.add("input-error", "shake");
     targetInput.focus();
 
-    // 揺れアニメーション完了後にクラスを解除
     setTimeout(() => {
       targetInput.classList.remove("shake");
     }, 450);
@@ -245,7 +234,6 @@ export function appendChatBubble(chat, chatContainer = document.getElementById("
   const bubble = document.createElement("div");
   bubble.className = `bubble ${chat.me ? "me" : "other"}`;
 
-  // コンテンツ設定 (テキスト / 画像等)
   if (chat.type === "image") {
     const img = document.createElement("img");
     img.src = chat.content;
@@ -255,7 +243,6 @@ export function appendChatBubble(chat, chatContainer = document.getElementById("
     bubble.textContent = chat.content;
   }
 
-  // 送信時刻のフォーマット
   const timeSpan = document.createElement("span");
   timeSpan.className = "chat-time";
   const date = chat.createdAt ? new Date(chat.createdAt) : new Date();
@@ -296,6 +283,23 @@ export function scrollChatToBottom(chatContainer = document.getElementById("Chat
       behavior: "smooth",
     });
   });
+}
+
+/**
+ * システムメッセージ・通知をチャット欄に追加
+ * @param {string} text
+ * @param {HTMLElement} [chatContainer]
+ */
+export function appendSystemNotice(text, chatContainer = document.getElementById("Chat")) {
+  if (!chatContainer) return;
+  const noticeWrapper = document.createElement("div");
+  noticeWrapper.className = "system-notice-wrapper";
+  const notice = document.createElement("div");
+  notice.className = "system-notice";
+  notice.textContent = text;
+  noticeWrapper.appendChild(notice);
+  chatContainer.appendChild(noticeWrapper);
+  scrollChatToBottom(chatContainer);
 }
 
 /**
@@ -388,5 +392,3 @@ export function renderCompanionList(companions, onSelectCompanion, activePeerId)
     container.appendChild(item);
   });
 }
-
-

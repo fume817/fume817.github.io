@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - P2P Chat</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="css/style.css">
     <!-- PeerJS CDN（グローバルロードで高速・確実に初期化） -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -24,8 +25,12 @@
     <!--開いたときにDBに登録されているか確認
         無ければindexにリダイレクト-->
     <div id="screen">
-        <div id ="profile">
-            <p>name</p>
+        <div id="profile">
+            <div class="my-profile-info">
+                <div class="my-avatar">💬</div>
+                <p>name</p>
+            </div>
+            <a href="index.html" class="btn-settings" title="アカウント変更 / ホームに戻る">⚙️</a>
         </div>
         
         <div id="userArea">

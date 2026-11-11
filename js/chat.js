@@ -6,7 +6,7 @@
 
 import { getMyInfo, isRegistered, addChat, getChats, addCompanion, addTime, getCompanions } from "./db.js";
 import { initChatSession, connectToPeer, sendP2PMessage, getActivePeerId } from "./session.js";
-import * as UI from "./UI.js";
+import * as UI from "./ui.js";
 
 // 現在会話中の相手のPeerID
 let currentCompanionId = null;
@@ -39,6 +39,7 @@ async function initializeChat() {
       onMessage: handleIncomingMessage,
       onStatusChange: handleStatusChange,
       onConnected: handlePeerConnected,
+      onDisconnected: handlePeerDisconnected,
     });
 
     // 4. イベントリスナーの設定

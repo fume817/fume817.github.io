@@ -33,6 +33,7 @@ let activeConnection = null;
 let onMessageReceivedCallback = null;
 let onStatusChangeCallback = null;
 let onConnectedCallback = null;
+let onDisconnectedCallback = null;
 
 /**
  * 入力されたPeerIDがサーバー上で競合（重複）しているかを確認
@@ -108,13 +109,14 @@ export async function checkPeerIdConflict(peerId) {
  * @param {function} callbacks.onConnected
  * @returns {Promise<Peer>}
  */
-export async function initChatSession(myPeerId, { onMessage, onStatusChange, onConnected } = {}) {
+export async function initChatSession(myPeerId, { onMessage, onStatusChange, onConnected, onDisconnected } = {}) {
   const Peer = await getPeerClass();
 
   return new Promise((resolve, reject) => {
     onMessageReceivedCallback = onMessage;
     onStatusChangeCallback = onStatusChange;
     onConnectedCallback = onConnected;
+    onDisconnectedCallback = onDisconnected;
 
     if (currentPeer && !currentPeer.destroyed) {
       currentPeer.destroy();
@@ -213,6 +215,9 @@ function setupDataConnection(conn) {
   conn.on("close", () => {
     console.log(`[Peer.js] ${conn.peer} との接続が切断されました`);
     notifyStatus("接続が切断されました", "disconnected");
+    if (onDisconnectedCallback) {
+      onDisconnectedCallback(conn.peer);
+    }
     activeConnection = null;
   });
 

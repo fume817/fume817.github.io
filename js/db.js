@@ -1,5 +1,5 @@
 //会話内容を引数で受け取り保存と出力
-import { openDB } from "idb";
+import { openDB } from "./idb.js";
 
 //--------自身の情報を保存するDB----------
 //自分の名前とPeerIDを保存するDB
