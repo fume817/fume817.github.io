@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - P2P Chat</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- ES Modulesでidbとpeerjsを解決するためのImport Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "idb": "./js/idb.js",
+        "peerjs": "https://esm.sh/peerjs@1.5.4"
+      }
+    }
+    </script>
+    <script type="module" src="js/chat.js"></script>
+</head>
+
+<body>
+    <!--開いたときにDBに登録されているか確認
+        無ければindexにリダイレクト-->
+    <div id="screen">
+        <div id ="profile">
+            <p>name</p>
+        </div>
+        
+        <div id="userArea">
+            <p>ユーザー名：<span id="usernameDisplay"></span></p>
+            <p>ステータス：<span id="statusDisplay"></span></p>
+            <p>+</p>
+        </div>
+
+        <div id="chatArea">
+            <div id="firstChat">
+                <button>新規チャットの作成</button>
+                    <p>接続を待機中</p>
+                    <p>or</p>
+                    <input type="text" placeholder="相手のPeerIDを入力してください" id="peerIdInput">
+                    <button id="connectButton">接続</button>
+            </div>
+
+            <div id="Chat"></div>
+
+            <div id="UI">
+                <button id="file">+</button>
+                <input type="text" id="messageInput" placeholder="メッセージを入力してください">
+                <button id="sendButton">送信</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

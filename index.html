@@ -1,11 +1,130 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sample</title>
+    <title>Welcome - P2P Chat</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- ES Modulesでidbとpeerjsを解決するためのImport Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "idb": "./js/idb.js",
+        "peerjs": "https://esm.sh/peerjs@1.5.4"
+      }
+    }
+    </script>
 </head>
+
 <body>
-    <p>HelloWorld</p>
+    <div class="container">
+        <!-- アプリアイコン＆ヘッダー -->
+        <div class="app-header">
+            <div class="logo-badge">💬</div>
+        </div>
+
+        <!-- 読み込み中スピナー -->
+        <div id="loadingView" class="loading-overlay">
+            <div class="spinner"></div>
+            <p class="message">データを読み込み中...</p>
+        </div>
+
+        <!-- ==============================================
+             2回目以降のアクセス（MyDBに登録済み）の場合
+             ============================================== -->
+        <div id="scndView" style="display: none;">
+            <div class="welcome-banner">
+                <div id="userAvatar" class="user-avatar">?</div>
+                <h1 id="scnd" class="gradient-text">おかえりなさい！</h1>
+                <div class="status-badge">
+                    <span class="status-dot"></span> 登録済みアカウント
+                </div>
+            </div>
+
+            <p class="message">保存されているプロファイル情報でチャットを開始できます</p>
+
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">ユーザー名</span>
+                    <span id="scndUsernameDisplay" class="info-value">---</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">PeerID</span>
+                    <span id="scndPeerIdDisplay" class="info-value peerid-tag">---</span>
+                </div>
+            </div>
+
+            <button type="button" id="scndStartChatBtn" class="btn-primary">チャットルームへ進む</button>
+            <button type="button" id="editProfileBtn" class="btn-secondary">アカウント情報を変更する</button>
+        </div>
+
+        <!-- ==============================================
+             初回アクセス（MyDBに未登録）の場合：新規登録フロー
+             ============================================== -->
+        <div id="firstView" style="display: none;">
+            <h1 id="first" class="gradient-text">初めまして！</h1>
+
+            <!-- ステップ進行状況インジケーター -->
+            <div class="step-indicator">
+                <div class="step-dot active"></div>
+                <div class="step-dot"></div>
+                <div class="step-dot"></div>
+            </div>
+
+            <!-- エラー表示領域 -->
+            <p id="error" class="error-message">ほかのIDを試してください</p>
+
+            <!-- ステップ1: ユーザー名の登録 -->
+            <div id="step-1" class="step-panel active">
+                <p class="message">まずはチャットで使用するユーザー名を登録してください</p>
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <input type="text" id="username" placeholder="例: たろう" autofocus>
+                    </div>
+                    <p class="input-hint">※チャット相手に表示される名前です（最大20文字）</p>
+                </div>
+                <button type="button" id="nextToStep2" class="btn-primary">次へ進む</button>
+            </div>
+
+            <!-- ステップ2: PeerIDの登録 -->
+            <div id="step-2" class="step-panel">
+                <p class="message">あなたを識別するためのPeerIDを登録してください</p>
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <input type="text" id="PeerID" placeholder="例: taro-1234">
+                        <button type="button" id="generateRandomIdBtn" class="btn-inline" title="ランダムなIDを生成">自動生成</button>
+                    </div>
+                    <p class="input-hint">※半角英数字、ハイフン、アンダースコア（3〜32文字）</p>
+                </div>
+                <button type="button" id="registerIdBtn" class="btn-primary">入力内容を確認する</button>
+                <button type="button" id="backToStep1" class="btn-secondary">戻る</button>
+            </div>
+
+            <!-- ステップ3: 入力内容の確認と登録確定 -->
+            <div id="step-3" class="step-panel">
+                <p class="message">入力内容に誤りはありませんか？</p>
+
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">ユーザー名</span>
+                        <span id="usernameDisplay" class="info-value"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">PeerID</span>
+                        <span id="peerIdDisplay" class="info-value peerid-tag"></span>
+                    </div>
+                </div>
+
+                <!-- チャット開始ボタン -->
+                <button type="button" id="btn" class="btn-primary">登録してチャット開始</button>
+                <button type="button" id="backToStep2" class="btn-secondary">修正する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- メイン制御スクリプト -->
+    <script type="module" src="js/main.js"></script>
 </body>
+
 </html>
