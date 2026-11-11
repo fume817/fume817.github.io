@@ -14,7 +14,9 @@
     {
       "imports": {
         "idb": "./js/idb.js",
-        "peerjs": "https://esm.sh/peerjs@1.5.4"
+        "peerjs": "https://esm.sh/peerjs@1.5.4",
+        "./ui.js": "./js/UI.js",
+        "./UI.js": "./js/UI.js"
       }
     }
     </script>
@@ -126,8 +128,8 @@
         </div>
     </div>
 
-    <!-- メイン制御スクリプト -->
-    <script type="module" src="js/main.js"></script>
+    <!-- メイン制御スクリプト (キャッシュバスター付き) -->
+    <script type="module" src="js/main.js?v=3"></script>
 </body>
 
 </html>

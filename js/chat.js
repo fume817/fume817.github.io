@@ -6,7 +6,7 @@
 
 import { getMyInfo, isRegistered, addChat, getChats, addCompanion, addTime, getCompanions } from "./db.js";
 import { initChatSession, connectToPeer, sendP2PMessage, getActivePeerId } from "./session.js";
-import * as UI from "./ui.js";
+import * as UI from "./UI.js";
 
 // 現在会話中の相手のPeerID
 let currentCompanionId = null;
@@ -84,6 +84,16 @@ async function handlePeerConnected(peerId) {
 
   // サイドバーの相手一覧を更新
   await refreshCompanionsList();
+}
+
+/**
+ * 相手との接続切断時のハンドラ
+ * @param {string} peerId
+ */
+function handlePeerDisconnected(peerId) {
+  console.log(`チャット相手(${peerId})との接続が切断されました`);
+  UI.appendSystemNotice(`${peerId} との接続が切断されました`);
+  UI.updateChatStatus("接続待機中 (オンライン)", "online");
 }
 
 /**
